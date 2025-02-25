@@ -1,17 +1,57 @@
-FROM gcc:latest AS build
+На основе предоставленной информации в файле, я постараюсь ответить на ваши вопросы о фильмах и актерах, а затем объясню команды для взаимодействия с базой данных Neo4j.
 
-RUN apt-get update && apt-get install -y git
-RUN git clone https://github.com/Dxftoro/Lnshell-nerfed.git /src/
+Начнем с ваших вопросов.
 
-WORKDIR /src/
-RUN gcc -o output ./*.c
+1. MATCH (m:Movie {title: "The Matrix"})<-[:DIRECTED]-(d:Director)
+RETURN d.name AS DirectorName
 
-FROM alpine:latest AS final
-RUN apk add gcompat
+2. Количество фильмов для каждого актера:
+   Чтобы вычислить количество фильмов, в которых участвовал каждый актер, можно выполнить запрос в Neo4j:
 
-WORKDIR /app/
-COPY --from=build /src/output /app/
-COPY --from=build /src/result.txt /app/
-RUN chmod +x /app/output
+     MATCH (p:Person)-[:ACTED_IN]->(m:Movie)
+   RETURN p.name AS Actor, COUNT(m) AS MoviesCount
+   
+3. Человек, участвовавший в наибольшем количестве фильмов в качестве актера:
+   Чтобы выяснить, кто является самым активным актером, следует использовать следующий запрос:
 
-CMD ["./output"]
+     MATCH (p:Person)-[:ACTED_IN]->(m:Movie)
+   RETURN p.name AS Actor, COUNT(m) AS MoviesCount
+   ORDER BY MoviesCount DESC
+   LIMIT 1
+   
+4. Фильм с наибольшим количеством актеров и режиссеров:
+   Чтобы найти фильм с наибольшим количеством участников, нужно выполнить такой запрос:
+
+     MATCH (m:Movie)<-[:ACTED_IN]-(p:Person)
+   WITH m, COUNT(p) AS ActorCount
+   MATCH (m)<-[:DIRECTED]-(d:Person)
+   RETURN m.title AS MovieTitle, (ActorCount + COUNT(d)) AS TotalParticipants
+   ORDER BY TotalParticipants DESC
+   LIMIT 1
+   
+Теперь давайте рассмотрим команды для выполнения различных операций с базой данных:
+
+- Вывод актеров с определенной фамилией:
+   Например, если вам нужно найти всех актеров с фамилией "Smith", выполните:
+
+     MATCH (p:Person) WHERE p.name CONTAINS 'Smith'
+   RETURN p.name
+   
+- Удаление актера:
+   Чтобы удалить актера из базы данных, можно использовать такой запрос (например, для удаление актера с именем "John Doe"):
+
+     MATCH (p:Person {name:'John Doe'})
+   DETACH DELETE p
+   
+- Вставка нового актера:
+   Для добавления нового актера в базу данных используйте следующий запрос:
+
+     CREATE (p:Person {name:'Новый Актер', born:1990})
+   
+- Обновление информации об актере:
+   Если необходимо изменить имя актера, можно использовать такой запрос:
+
+     MATCH (p:Person {name:'Старое имя'})
+   SET p.name = 'Новое имя'
+   
+Если у вас есть дополнительные вопросы или задачи, которые необходимо решить, не стесняйтесь спрашивать!
